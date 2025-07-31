@@ -12,6 +12,9 @@
 		6243164A0FA46D3F3D739F60 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		F987D8ED2E3C005200E0D319 /* RTNMyImageViewManager.mm in Sources */ = {isa = PBXBuildFile; fileRef = F987D8EC2E3C004800E0D319 /* RTNMyImageViewManager.mm */; };
+		F987D8F02E3C00D600E0D319 /* RTNMyImageView.mm in Sources */ = {isa = PBXBuildFile; fileRef = F987D8EF2E3C00C700E0D319 /* RTNMyImageView.mm */; };
+		F987D8F52E3C02FB00E0D319 /* MyImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F987D8F42E3C02FB00E0D319 /* MyImageView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +28,11 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = FaceDetectionApp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = FaceDetectionApp/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		F987D8EB2E3BFFC400E0D319 /* RTNMyImageView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RTNMyImageView.h; sourceTree = "<group>"; };
+		F987D8EC2E3C004800E0D319 /* RTNMyImageViewManager.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RTNMyImageViewManager.mm; sourceTree = "<group>"; };
+		F987D8EF2E3C00C700E0D319 /* RTNMyImageView.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RTNMyImageView.mm; sourceTree = "<group>"; };
+		F987D8F12E3C02A100E0D319 /* FaceDetectionApp-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "FaceDetectionApp-Bridging-Header.h"; sourceTree = "<group>"; };
+		F987D8F42E3C02FB00E0D319 /* MyImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MyImageView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,11 +50,16 @@
 		13B07FAE1A68108700A75B9A /* FaceDetectionApp */ = {
 			isa = PBXGroup;
 			children = (
+				F987D8F42E3C02FB00E0D319 /* MyImageView.swift */,
+				F987D8EF2E3C00C700E0D319 /* RTNMyImageView.mm */,
+				F987D8EC2E3C004800E0D319 /* RTNMyImageViewManager.mm */,
+				F987D8EB2E3BFFC400E0D319 /* RTNMyImageView.h */,
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				F987D8F12E3C02A100E0D319 /* FaceDetectionApp-Bridging-Header.h */,
 			);
 			name = FaceDetectionApp;
 			sourceTree = "<group>";
@@ -131,7 +144,7 @@
 				LastUpgradeCheck = 1210;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
-						LastSwiftMigration = 1120;
+						LastSwiftMigration = 1630;
 					};
 				};
 			};
@@ -246,7 +259,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F987D8F02E3C00D600E0D319 /* RTNMyImageView.mm in Sources */,
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				F987D8ED2E3C005200E0D319 /* RTNMyImageViewManager.mm in Sources */,
+				F987D8F52E3C02FB00E0D319 /* MyImageView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -275,6 +291,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FaceDetectionApp;
+				SWIFT_OBJC_BRIDGING_HEADER = "FaceDetectionApp-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -302,6 +319,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "org.reactjs.native.example.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = FaceDetectionApp;
+				SWIFT_OBJC_BRIDGING_HEADER = "FaceDetectionApp-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				VERSIONING_SYSTEM = "apple-generic";
 			};

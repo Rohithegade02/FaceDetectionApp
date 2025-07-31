@@ -15,6 +15,7 @@ import {
   Text,
 } from 'react-native';
 import FaceDetector from './components/FaceDetector';
+import RTNMyImageViewNativeComponent from './RTNMyImageView/js/RTNMyImageViewNativeComponent';
 
 function App() {
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
@@ -69,12 +70,16 @@ function App() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      <FaceDetector
-        style={styles.faceDetector}
-        onFacesDetected={event => {
-          console.log(`Faces detected: ${event.nativeEvent.faces.length}`);
-        }}
-      />
+      {Platform.OS === 'ios' ? (
+        <RTNMyImageViewNativeComponent />
+      ) : (
+        <FaceDetector
+          style={styles.faceDetector}
+          onFacesDetected={event => {
+            console.log(`Faces detected: ${event.nativeEvent.faces.length}`);
+          }}
+        />
+      )}
     </View>
   );
 }
