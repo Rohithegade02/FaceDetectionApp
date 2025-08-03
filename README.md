@@ -11,7 +11,6 @@ A comprehensive React Native application that integrates native modules for real
 - ✅ **Front/Back Camera Switching**
 - ✅ **Start/Stop Detection** functionality
 - ✅ **Native Module Implementation** (not just React Native packages)
-- ✅ **Cross-platform Support** (Android & iOS ready)
 
 ## 🏗️ **Architecture**
 
@@ -89,15 +88,6 @@ cd FaceDetectionApp
 npm install
 ```
 
-3. **iOS Setup** (when implementing iOS)
-
-```bash
-cd ios
-bundle install
-bundle exec pod install
-cd ..
-```
-
 4. **Android Setup**
 
 ```bash
@@ -115,13 +105,6 @@ npm run android
 yarn android
 ```
 
-#### **iOS** (when implemented)
-
-```bash
-npm run ios
-# OR
-yarn ios
-```
 
 ## 📱 **Usage**
 
@@ -272,34 +255,6 @@ FaceDetectionApp/
 - **Background thread processing** to avoid UI blocking
 - **Memory efficient** with proper cleanup
 
-## 🔄 **Future iOS Implementation**
-
-Ready for iOS implementation using:
-
-- **AVFoundation** for camera preview
-- **Vision Framework** for face detection
-- **Core Graphics** for bounding box drawing
-
-## 🐛 **Troubleshooting**
-
-### **Common Issues**
-
-1. **Black Camera Screen**: Ensure camera permissions are granted
-2. **No Face Detection**: Check ML Kit model download
-3. **Build Errors**: Verify Java 8+ configuration for CameraX
-
-### **Debug Commands**
-
-```bash
-# Check logs
-adb logcat | grep FaceDetector
-
-# Clear app data
-adb shell pm clear com.facedetectionapp
-
-# Reinstall app
-npm run android
-```
 
 ## 📖 **Documentation References**
 
@@ -316,10 +271,7 @@ npm run android
 - Comprehensive error handling
 - Clean, maintainable architecture
 
-**🔄 iOS Implementation: Ready for Development**
 
-- Architecture designed for iOS integration
-- Cross-platform component structure in place
 
 ---
 
