@@ -4,6 +4,7 @@
 #import <react/renderer/components/RTNMyImageViewSpecs/EventEmitters.h>
 #import <react/renderer/components/RTNMyImageViewSpecs/Props.h>
 #import <react/renderer/components/RTNMyImageViewSpecs/RCTComponentViewHelpers.h>
+#import <React/RCTConversions.h>
 #import "FaceDetectionApp-Swift.h"
 
 using namespace facebook::react;
@@ -29,17 +30,7 @@ using namespace facebook::react;
     _myImageView = [[MyImageView alloc] initWithFrame:frame];
     _myImageView.backgroundColor = [UIColor blackColor];
     
-    // Set up face detection callback
-    __weak typeof(self) weakSelf = self;
-    _myImageView.onFacesDetected = ^(NSDictionary *eventData) {
-      if (weakSelf && weakSelf->_eventEmitter) {
-        auto emitter = std::static_pointer_cast<const RTNMyImageViewEventEmitter>(weakSelf->_eventEmitter);
-        RTNMyImageViewEventEmitterOnFacesDetected event = {
-          .faces = facebook::react::convertIdToFollyDynamic(eventData[@"faces"])
-        };
-        emitter->onFacesDetected(event);
-      }
-    };
+    // TODO: Set up face detection callback later
 
     self.contentView = _myImageView;
   }

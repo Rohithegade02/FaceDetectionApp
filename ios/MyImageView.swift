@@ -3,7 +3,7 @@ import AVFoundation
 import Vision
 
 @objc(MyImageView)
-class MyImageView: UIView {
+class MyImageView: UIView, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     private var captureSession: AVCaptureSession?
     private var previewLayer: AVCaptureVideoPreviewLayer?
@@ -16,7 +16,7 @@ class MyImageView: UIView {
     private let outputQueue = DispatchQueue(label: "VideoOutputQueue")
     
     // Event callback
-    var onFacesDetected: (([String: Any]) -> Void)?
+    @objc var onFacesDetected: (([String: Any]) -> Void)? = nil
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -91,7 +91,7 @@ class MyImageView: UIView {
             .builtInTrueDepthCamera
         ]
         
-        let discoverySession = AVCaptureDeviceDiscoverySession(
+        let discoverySession = AVCaptureDevice.DiscoverySession(
             deviceTypes: deviceTypes,
             mediaType: .video,
             position: position
@@ -187,13 +187,12 @@ class MyImageView: UIView {
             ]
         }
         
-        onFacesDetected?(["faces": faceData])
+        // TODO: Re-enable event callback later
+        // onFacesDetected?(["faces": faceData])
     }
-}
-
-// MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
-extension MyImageView: AVCaptureVideoDataOutputSampleBufferDelegate {
-    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+    
+    // MARK: - AVCaptureVideoDataOutputSampleBufferDelegate
+    @objc func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard isDetecting else { return }
         
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
