@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -40,7 +40,7 @@ const FaceDetector: React.FC<FaceDetectorProps> = ({
   const [faces, setFaces] = useState<Face[]>([]);
 
   useEffect(() => {
-    // Setup face detector with default options
+    // Setup face detector with default options on mount
     FaceDetectorModule.setupFaceDetector({
       performanceMode: 'fast',
       landmarkMode: 'none',
@@ -49,22 +49,35 @@ const FaceDetector: React.FC<FaceDetectorProps> = ({
       minFaceSize: 0.15,
       enableTracking: true,
     });
+
+    // Cleanup function that runs on component unmount
+    return () => {
+      // Stop camera and clear faces
+      FaceDetectorModule.stopCamera()
+      
+      // Clear faces state
+      setFaces([]);
+      
+      // Reset detection state
+      setIsDetecting(false);
+    };
   }, []);
 
-  const handleFacesDetected = (
-    event: NativeSyntheticEvent<{ faces: Face[] }>,
-  ) => {
-    const detectedFaces = event.nativeEvent.faces;
-    setFaces(detectedFaces);
-    if (onFacesDetected) {
-      onFacesDetected(event);
-    }
-  };
+  const handleFacesDetected = useCallback(
+    (event: NativeSyntheticEvent<{ faces: Face[] }>) => {
+      const detectedFaces = event.nativeEvent.faces;
+      setFaces(detectedFaces);
+      if (onFacesDetected) {
+        onFacesDetected(event);
+      }
+    },
+    [onFacesDetected]
+  );
 
-  const toggleCamera = () => {
+  const toggleCamera = useCallback(() => {
     const newValue = !isFrontCamera;
     setIsFrontCamera(newValue);
-  };
+  },[])
 
   return (
     <View style={[styles.container, style]}>

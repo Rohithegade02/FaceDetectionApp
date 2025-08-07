@@ -18,7 +18,7 @@ import com.facebook.react.bridge.ReactContext
 import com.google.mlkit.vision.face.Face
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-
+// Main camera implementation using CameraX with face detection integration
 @ExperimentalGetImage
 class FaceDetectorView @JvmOverloads constructor(
     context: Context,
