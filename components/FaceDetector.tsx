@@ -1,174 +1,179 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
-  StyleSheet,
   View,
-  Text,
-  TouchableOpacity,
+  PermissionsAndroid,
+  Platform,
+  Alert,
   NativeModules,
+  NativeEventEmitter,
   requireNativeComponent,
-  ViewStyle,
-  NativeSyntheticEvent,
+  StyleSheet,
+  UIManager,
+  findNodeHandle,
+  Button,
+  Image,
 } from 'react-native';
 
-const { FaceDetectorModule } = NativeModules;
-const FaceDetectorView = requireNativeComponent<any>('FaceDetectorView');
+const {FaceDetectionModule} = NativeModules;
+const NativeCameraView = requireNativeComponent('CameraView');
 
-interface FaceDetectorProps {
-  style?: ViewStyle;
-  onFacesDetected?: (event: NativeSyntheticEvent<{ faces: Face[] }>) => void;
-}
-
-interface Face {
-  id: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-  left?: number;
-  top?: number;
-  right?: number;
-  bottom?: number;
-  trackingId?: number;
-}
-
-const FaceDetector: React.FC<FaceDetectorProps> = ({
-  style,
-  onFacesDetected,
+const FaceDetector = ({
+  faces,
+  setFaces,
+  cameraViewStyle,
+  setDetectionEnabled,
+  cameraType = 'front',
+  detectionEnabled = false,
+  setCameraResolution,
+}: {
+  faces: any;
+  setFaces: any;
+  cameraViewStyle: any;
+  setDetectionEnabled: any;
+  cameraType: string;
+  detectionEnabled: boolean;
+  setCameraResolution: any;
 }) => {
-  const [isFrontCamera, setIsFrontCamera] = useState(false);
-  const [isDetecting, setIsDetecting] = useState(true);
-  const [faces, setFaces] = useState<Face[]>([]);
+  
+  const [hasPermission, setHasPermission] = useState(false);
+  const [uriValue, setUriValue] = useState('');
+  const cameraRef = useRef(null);
+
+  // Request permission
+  const requestCameraPermission = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          setHasPermission(true);
+        } else {
+          Alert.alert('Camera permission denied');
+        }
+      } else {
+        console.warn('Camera permission error:');
+      }
+    } catch (e) {
+      console.warn('Camera permission error:', e);
+    }
+  };
 
   useEffect(() => {
-    // Setup face detector with default options on mount
-    FaceDetectorModule.setupFaceDetector({
-      performanceMode: 'fast',
-      landmarkMode: 'none',
-      contourMode: 'none',
-      classificationMode: 'none',
-      minFaceSize: 0.15,
-      enableTracking: true,
-    });
-
-    // Cleanup function that runs on component unmount
-    return () => {
-      // Stop camera and clear faces
-      FaceDetectorModule.stopCamera()
-      
-      // Clear faces state
-      setFaces([]);
-      
-      // Reset detection state
-      setIsDetecting(false);
-    };
+    requestCameraPermission();
   }, []);
 
-  const handleFacesDetected = useCallback(
-    (event: NativeSyntheticEvent<{ faces: Face[] }>) => {
-      const detectedFaces = event.nativeEvent.faces;
-      setFaces(detectedFaces);
-      if (onFacesDetected) {
-        onFacesDetected(event);
-      }
-    },
-    [onFacesDetected]
-  );
+  useEffect(() => {
+    if (hasPermission) {
+      setDetectionEnabled?.(true);
+    }
+  }, [hasPermission, setDetectionEnabled]);
 
-  const toggleCamera = useCallback(() => {
-    const newValue = !isFrontCamera;
-    setIsFrontCamera(newValue);
-  },[])
+  useEffect(() => {
+    const emitter = new NativeEventEmitter(FaceDetectionModule);
+
+    const faceSub = emitter.addListener('onSingleFaceInTarget', foundFaces => {
+      setFaces?.(foundFaces);
+    });
+
+    const photoSub = emitter.addListener('onPictureTaken', data => {
+      setUriValue(data.uri);
+      return Alert.alert('Photo Captured', data.uri);
+    });
+
+    const photoErrorSub = emitter.addListener('onPictureError', data => {
+      return Alert.alert('Photo Error', data);
+    });
+
+    return () => {
+      faceSub.remove();
+      photoSub.remove();
+      photoErrorSub.remove();
+    };
+  }, [setFaces]);
+
+  const takePicture = () => {
+    if (faces.length === 0) {
+      return Alert.alert('Face Error', 'No face found.');
+    }
+    if (faces.length > 1) {
+      return Alert.alert('Face Error', 'More than 1 face in frame.');
+    }
+    const viewId = findNodeHandle(cameraRef.current);
+    if (viewId) {
+      UIManager.dispatchViewManagerCommand(
+        viewId,
+        UIManager.getViewManagerConfig('CameraView').Commands.takePicture,
+        [],
+      );
+    }
+  };
 
   return (
-    <View style={[styles.container, style]}>
-      <FaceDetectorView
-        style={styles.preview}
-        cameraType={isFrontCamera ? 'front' : 'back'}
-        isDetecting={isDetecting}
-        onFacesDetected={handleFacesDetected}
-      />
-
-      <View style={styles.controls}>
-        <TouchableOpacity style={styles.button} onPress={toggleCamera}>
-          <Text style={styles.buttonText}>
-            {isFrontCamera ? 'Switch to Back' : 'Switch to Front'}
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => setIsDetecting(!isDetecting)}
-        >
-          <Text style={styles.buttonText}>
-            {isDetecting ? 'Stop' : 'Start'} Detection
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.faceInfo}>
-        <Text style={styles.faceText}>Faces detected: {faces.length}</Text>
-        {faces.map((face, index) => (
-          <View key={face.id || index} style={styles.faceDetails}>
-            <Text style={styles.faceText}>Face {(face.id ?? index) + 1}:</Text>
-            <Text style={styles.coordinateText}>X: {face.x}</Text>
-            <Text style={styles.coordinateText}>Y: {face.y}</Text>
-            <Text style={styles.coordinateText}>Width: {face.width}</Text>
-            <Text style={styles.coordinateText}>Height: {face.height}</Text>
+    <View style={cameraViewStyle}>
+      {hasPermission ? (
+        <>
+          <NativeCameraView
+            ref={cameraRef}
+            style={StyleSheet.absoluteFill}
+            cameraType={cameraType}
+            detectionEnabled={detectionEnabled}
+          />
+          <View style={styles.captureButtonView}>
+            <Button title="Take Picture" onPress={takePicture} />
           </View>
-        ))}
-      </View>
+          {uriValue && (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{uri: uriValue}}
+                style={styles.previewImage}
+                resizeMode="cover"
+              />
+            </View>
+          )}
+        </>
+      ) : (
+        <View style={styles.permissionView}>
+          <Button
+            title="Grant Camera Permission"
+            onPress={requestCameraPermission}
+          />
+        </View>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  preview: {
-    flex: 1,
-  },
-  controls: {
+  captureButtonView: {
     position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    bottom: 15,
+    alignSelf: 'center',
+    backgroundColor: '#ffffffcc',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    elevation: 5,
   },
-  button: {
-    padding: 10,
-    backgroundColor: '#4285F4',
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  faceInfo: {
+  previewContainer: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    padding: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    top: 10,
+    right: 10,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  faceText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  previewImage: {
+    width: 100,
+    height: 120,
   },
-  faceDetails: {
-    marginTop: 8,
-    paddingLeft: 10,
-  },
-  coordinateText: {
-    color: 'white',
-    fontSize: 14,
+  permissionView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
-export default FaceDetector;
+  export default FaceDetector;

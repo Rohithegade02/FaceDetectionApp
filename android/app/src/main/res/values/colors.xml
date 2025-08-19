@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Brand / Primary Colors -->
+    <color name="my_blue">#2196F3</color>    <!-- Primary Blue -->
+    <color name="my_orange">#FF9800</color>  <!-- Accent Orange -->
+    <color name="my_green">#4CAF50</color>   <!-- Success Green -->
+    <color name="my_red">#F44336</color>     <!-- Error Red -->
+    <color name="my_yellow">#FFD034</color>  <!-- Warning Yellow -->
+
+    <!-- Optional extras for flexibility -->
+    <color name="my_white">#FFFFFF</color>
+    <color name="my_black">#000000</color>
+    <color name="my_gray">#9E9E9E</color>
+    <color name="my_dark_blue">#1565C0</color>
+</resources>
