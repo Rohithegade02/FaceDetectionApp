@@ -32,7 +32,13 @@ import android.view.ViewGroup
 import android.view.ViewGroup.OnHierarchyChangeListener
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facedetectionapp.R  // Make sure this import exists for your custom layout
-
+import android.os.Handler
+import android.os.Looper
+import java.util.concurrent.atomic.AtomicInteger
+import android.speech.tts.TextToSpeech
+import android.speech.tts.UtteranceProgressListener
+import java.util.Locale
+import android.os.Bundle
 
 
 class CameraView @JvmOverloads constructor(
@@ -55,6 +61,18 @@ class CameraView @JvmOverloads constructor(
     private var receivedCameraType: String? = null
     private var currentToast: Toast? = null // Keep reference to cancel previous toast
     private var lastToastTime = 0L
+
+    // Add new properties for timer functionality
+    private var detectionTimer: Handler? = null
+    private var isDetectionRunning = false
+    private var detectionStartTime = 0L
+    private var totalSmilesDetected = AtomicInteger(0)
+    private var totalFacesDetected = AtomicInteger(0)
+    private var detectionDuration = 10000L // 10 seconds in milliseconds
+
+    // Add TTS properties
+    private var textToSpeech: TextToSpeech? = null
+    private var isTtsReady = false
 
 
     init {
@@ -79,6 +97,58 @@ class CameraView @JvmOverloads constructor(
             .build()
 
         faceDetector = FaceDetection.getClient(options)
+
+        // Initialize Text-to-Speech
+        initializeTextToSpeech()
+    }
+
+    private fun initializeTextToSpeech() {
+        textToSpeech = TextToSpeech(context) { status ->
+            if (status == TextToSpeech.SUCCESS) {
+                val result = textToSpeech?.setLanguage(Locale.US)
+                if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                    Log.e("TTS", "Language not supported")
+                } else {
+                    isTtsReady = true
+                    Log.d("TTS", "Text-to-Speech initialized successfully")
+                }
+            } else {
+                Log.e("TTS", "Text-to-Speech initialization failed")
+            }
+        }
+
+        // Set utterance progress listener
+        textToSpeech?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) {
+                Log.d("TTS", "Started speaking: $utteranceId")
+            }
+
+            override fun onDone(utteranceId: String?) {
+                Log.d("TTS", "Finished speaking: $utteranceId")
+            }
+
+            override fun onError(utteranceId: String?) {
+                Log.e("TTS", "Error speaking: $utteranceId")
+            }
+        })
+    }
+
+    private fun speakText(text: String, utteranceId: String = "utterance") {
+        if (isTtsReady && textToSpeech != null) {
+            val params = Bundle().apply {
+                putString(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, utteranceId)
+            }
+            
+            val result = textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, params, utteranceId)
+            if (result == TextToSpeech.ERROR) {
+                Log.e("TTS", "Error speaking text: $text")
+                // Fallback to toast if TTS fails
+                showToast(text, R.color.my_green)
+            }
+        } else {
+            // Fallback to toast if TTS not ready
+            showToast(text, R.color.my_green)
+        }
     }
 
     fun startCamera(cameraType: String) {
@@ -116,6 +186,10 @@ class CameraView @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         cameraProvider?.unbindAll()
+        
+        // Shutdown TTS
+        textToSpeech?.stop()
+        textToSpeech?.shutdown()
     }
 
     private fun installHierarchyFitter(view: ViewGroup) {
@@ -175,7 +249,7 @@ class CameraView @JvmOverloads constructor(
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            // In your face detection success listener:
+            
             faceDetector.process(image)
                 .addOnSuccessListener { faces ->
                     overlayView.clear()
@@ -183,7 +257,7 @@ class CameraView @JvmOverloads constructor(
                     val facesInFrame = mutableListOf<Face>()
                     val facesInTargetBox = mutableListOf<Face>()
                     val faceArray = Arguments.createArray()
-                    currentToast?.cancel() // Clear any existing toast first
+                    currentToast?.cancel()
 
                     // First pass: Categorize all detected faces
                     for (face in faces) {
@@ -204,7 +278,9 @@ class CameraView @JvmOverloads constructor(
                     when {
                         // Case 1: Multiple faces in entire frame
                         facesInFrame.size > 1 -> {
-                            showToast("Multiple faces detected in frame", R.color.my_red)
+                            if (!isDetectionRunning) {
+                                speakText("Multiple faces detected in frame")
+                            }
                             sendEmptyArrayToJS()
                         }
                         
@@ -221,28 +297,39 @@ class CameraView @JvmOverloads constructor(
                                     faceArray.pushMap(faceMap)
                                     sendFaceDataToJS(faceArray)
                                     
-                                    // Check for smile and show appropriate message
-                                    val smilingProbability = face.smilingProbability
-                                    if (smilingProbability != null && smilingProbability > 0.5f) {
-
-                                        showToast("You are in a good mood! ��", R.color.my_green)
-                                    } else if (smilingProbability != null && smilingProbability < 0.5f) {
-                                        showToast("You are not in a good mood! ��", R.color.my_red)
+                                    // Count faces and smiles during detection
+                                    if (isDetectionRunning) {
+                                        totalFacesDetected.incrementAndGet()
+                                        
+                                        val smilingProbability = face.smilingProbability
+                                        if (smilingProbability != null && smilingProbability > 0.5f) {
+                                            totalSmilesDetected.incrementAndGet()
+                                        }
                                     } else {
-                                        showToast("Face detected in target box", R.color.my_green)
+                                        // Normal detection mode - use TTS for smile detection
+                                        val smilingProbability = face.smilingProbability
+                                        if (smilingProbability != null && smilingProbability > 0.5f) {
+                                            speakText("You are in a good mood!")
+                                        } else {
+                                            speakText("Face detected in target box")
+                                        }
                                     }
                                 }
                                 // Subcase 2b: Face not in target box
                                 else -> {
-                                    showToast("Position your face inside the box", R.color.my_yellow)
+                                    if (!isDetectionRunning) {
+                                        speakText("Position your face inside the box")
+                                    }
                                     sendEmptyArrayToJS()
                                 }
                             }
                         }
                         
-                        // Case 3: Multiple faces in target box (but might be single in frame)
+                        // Case 3: Multiple faces in target box
                         facesInTargetBox.size > 1 -> {
-                            showToast("Multiple faces in target box", R.color.my_orange)
+                            if (!isDetectionRunning) {
+                                speakText("Multiple faces in target box")
+                            }
                             sendEmptyArrayToJS()
                         }
                         
@@ -254,7 +341,9 @@ class CameraView @JvmOverloads constructor(
                 }
                 .addOnFailureListener { 
                     Log.e("FaceDetection", "Error: ${it.message}")
-                    showToast("Face detection failed", R.color.my_red)
+                    if (!isDetectionRunning) {
+                        speakText("Face detection failed")
+                    }
                     it.printStackTrace()
                 }
                 .addOnCompleteListener { 
@@ -381,5 +470,74 @@ class CameraView @JvmOverloads constructor(
                 }
             }
         )
+    }
+
+    fun startDetection() {
+        if (isDetectionRunning) {
+            speakText("Detection already running!")
+            return
+        }
+        
+        isDetectionRunning = true
+        detectionStartTime = System.currentTimeMillis()
+        totalSmilesDetected.set(0)
+        totalFacesDetected.set(0)
+        
+        speakText("Detection started! 10 seconds remaining")
+        
+        // Start timer
+        detectionTimer = Handler(Looper.getMainLooper())
+        detectionTimer?.postDelayed({
+            stopDetection()
+        }, detectionDuration)
+        
+        // Update countdown every second
+        updateCountdown()
+    }
+    
+    fun stopDetection() {
+        if (!isDetectionRunning) {
+            speakText("No detection running!")
+            return
+        }
+        
+        isDetectionRunning = false
+        detectionTimer?.removeCallbacksAndMessages(null)
+        detectionTimer = null
+        
+        // Calculate results
+        val elapsedTime = System.currentTimeMillis() - detectionStartTime
+        val smiles = totalSmilesDetected.get()
+        val faces = totalFacesDetected.get()
+        
+        val resultMessage = when {
+            elapsedTime < 1000 -> "Detection stopped too early"
+            smiles > 0 -> "Great! You smiled $smiles times in ${elapsedTime/1000} seconds! You are in a good mood!"
+            faces > 0 -> "Face detected but no smiles in ${elapsedTime/1000} seconds. Try to smile more!"
+            else -> "No faces detected in ${elapsedTime/1000} seconds"
+        }
+        
+        speakText(resultMessage)
+        
+        // Reset counters
+        totalSmilesDetected.set(0)
+        totalFacesDetected.set(0)
+    }
+    
+    private fun updateCountdown() {
+        if (!isDetectionRunning) return
+        
+        val elapsed = System.currentTimeMillis() - detectionStartTime
+        val remaining = detectionDuration - elapsed
+        
+        if (remaining > 0) {
+            val secondsLeft = (remaining / 1000).toInt()
+            // Don't speak countdown, just show visual feedback
+            showToast("$secondsLeft seconds remaining...", R.color.my_green)
+            
+            detectionTimer?.postDelayed({
+                updateCountdown()
+            }, 1000)
+        }
     }
 }

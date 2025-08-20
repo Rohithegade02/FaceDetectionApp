@@ -25,12 +25,18 @@ class CameraViewManager : SimpleViewManager<CameraView>() {
     }
 
     override fun getCommandsMap(): Map<String, Int> {
-        return mapOf("takePicture" to 1)
+        return mapOf(
+            "takePicture" to 1,
+            "startDetection" to 2,
+            "stopDetection" to 3
+        )
     }
 
     override fun receiveCommand(view: CameraView, commandId: Int, args: ReadableArray?) {
         when (commandId) {
             1 -> view.capturePhoto()
+            2 -> view.startDetection()
+            3 -> view.stopDetection()
         }
     }
 }

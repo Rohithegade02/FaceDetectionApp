@@ -37,6 +37,7 @@ const FaceDetector = ({
   
   const [hasPermission, setHasPermission] = useState(false);
   const [uriValue, setUriValue] = useState('');
+  const [isDetectionRunning, setIsDetectionRunning] = useState(false);
   const cameraRef = useRef(null);
 
   // Request permission
@@ -92,6 +93,30 @@ const FaceDetector = ({
     };
   }, [setFaces]);
 
+  const startDetection = () => {
+    const viewId = findNodeHandle(cameraRef.current);
+    if (viewId) {
+      UIManager.dispatchViewManagerCommand(
+        viewId,
+        UIManager.getViewManagerConfig('CameraView').Commands.startDetection,
+        [],
+      );
+      setIsDetectionRunning(true);
+    }
+  };
+
+  const stopDetection = () => {
+    const viewId = findNodeHandle(cameraRef.current);
+    if (viewId) {
+      UIManager.dispatchViewManagerCommand(
+        viewId,
+        UIManager.getViewManagerConfig('CameraView').Commands.stopDetection,
+        [],
+      );
+      setIsDetectionRunning(false);
+    }
+  };
+
   const takePicture = () => {
     if (faces.length === 0) {
       return Alert.alert('Face Error', 'No face found.');
@@ -119,9 +144,29 @@ const FaceDetector = ({
             cameraType={cameraType}
             detectionEnabled={detectionEnabled}
           />
+          
+          {/* Detection Control Buttons */}
+          <View style={styles.detectionControls}>
+            {!isDetectionRunning ? (
+              <Button 
+                title="Start Detection (10s)" 
+                onPress={startDetection}
+                color="#4CAF50"
+              />
+            ) : (
+              <Button 
+                title="Stop Detection" 
+                onPress={stopDetection}
+                color="#F44336"
+              />
+            )}
+          </View>
+
+          {/* Photo Capture Button */}
           <View style={styles.captureButtonView}>
             <Button title="Take Picture" onPress={takePicture} />
           </View>
+          
           {uriValue && (
             <View style={styles.previewContainer}>
               <Image
@@ -145,6 +190,16 @@ const FaceDetector = ({
 };
 
 const styles = StyleSheet.create({
+  detectionControls: {
+    position: 'absolute',
+    top: 50,
+    alignSelf: 'center',
+    backgroundColor: '#ffffffcc',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 8,
+    elevation: 5,
+  },
   captureButtonView: {
     position: 'absolute',
     bottom: 15,
@@ -176,4 +231,4 @@ const styles = StyleSheet.create({
   },
 });
 
-  export default FaceDetector;
+export default FaceDetector;
